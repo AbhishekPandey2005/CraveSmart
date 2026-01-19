@@ -1,6 +1,6 @@
 ## Run Locally
 
-**Prerequisites:**  Node.js
+**Prerequisites:**  Node.js, React
 
 
 1. Install dependencies:
