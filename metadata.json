@@ -1,5 +1,5 @@
 {
-  "name": "CraveSmart",
-  "description": "Smart nutrition guidance web app designed to help users make better food choices through interactive and user-friendly recommendations.",
+  "name": " CraveSmart",
+  "description": "AI-powered meal analyzer and diet planner. Upload a meal photo to get macros, health analysis, and a personalized full-day nutrition plan.",
   "requestFramePermissions": []
 }
