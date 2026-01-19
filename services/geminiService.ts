@@ -84,6 +84,11 @@ export const analyzeMeal = async (
   planType: "analyze" | "full_day",
   mealsPerDay: number
 ): Promise<AnalysisResult> => {
+  
+  if (!process.env.API_KEY) {
+    throw new Error("API Key is missing. Check your environment configuration.");
+  }
+
   // Use process.env.API_KEY exclusively as required by guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
@@ -158,7 +163,7 @@ export const analyzeMeal = async (
     6. If the user prefers local cuisine (Prefer Local Cuisine: Yes), all meals must use dishes common in ${userProfile.country}.
     7. Provide a short "Coach Summary" giving advice or encouragement.
 
-    CRITICAL: Return the output strictly as a JSON object.
+    CRITICAL: Return the output strictly as a JSON object. Do not wrap in markdown code blocks.
 
     Expected JSON Structure:
     {
@@ -204,14 +209,31 @@ export const analyzeMeal = async (
     const text = response.text;
     if (!text) throw new Error("Received empty response from Gemini");
 
-    const data = JSON.parse(text) as AnalysisResult;
+    // Robust JSON cleaning: Remove markdown code blocks if present
+    const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    const data = JSON.parse(cleanedText) as AnalysisResult;
     
     // Apply client-side safety check for strict diet enforcement
     const sanitizedData = sanitizeMealPlan(data, userProfile);
     
     return sanitizedData;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini API Error:", error);
-    throw new Error("Failed to analyze meal or generate plan. Please try again.");
+
+    let message = error.message || "Unknown error";
+    
+    // Provide more actionable feedback based on error type
+    if (message.includes("403") || message.includes("API key")) {
+      message = "Access denied. Please check your API key configuration.";
+    } else if (message.includes("404")) {
+      message = "Model not found. The service might be temporarily unavailable.";
+    } else if (message.includes("503")) {
+      message = "The AI service is currently overloaded. Please try again.";
+    } else if (error instanceof SyntaxError) {
+      message = "Failed to parse the nutrition plan. Please try again.";
+    }
+    
+    throw new Error(message);
   }
 };
